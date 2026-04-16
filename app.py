@@ -501,7 +501,7 @@ st.divider()
 st.caption(
     "Uwagi: Aktualna wersja programu jest naukowo poprawnym narzędziem do planowania "
     "liczebności próby dla porównań dwugrupowych, ale jego część nieparametryczna"
-    " ma charakter przybliżony i konserwatywny opartym na asymptotycznej względnej efektywności (ARE). "
+    " ma charakter przybliżony i konserwatywny oparty na asymptotycznej względnej efektywności (ARE). "
     "Jeżeli projekt badania ma wysoką wagę kliniczną, regulacyjną lub rejestracyjną,"
     " zalecane jest potwierdzenie liczebności przez dedykowane oprogramowanie lub symulację Monte Carlo."
 )
