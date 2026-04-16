@@ -1,11 +1,20 @@
 import math
-from functools import lru_cache
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
-from scipy.stats import nct, norm, t as student_t
+
+from core import (
+    ARE_NORMAL,
+    effective_parametric_n_for_nonparametric,
+    n_independent_t_exact,
+    n_mann_whitney,
+    n_paired_t_exact,
+    n_wilcoxon,
+    power_independent_t,
+    power_paired_t,
+)
 
 
 st.set_page_config(
@@ -15,100 +24,11 @@ st.set_page_config(
 )
 
 
-ARE_NORMAL = 3 / math.pi
 COHEN_D = {
     "Mały efekt (d = 0,2)": 0.2,
     "Średni efekt (d = 0,5)": 0.5,
     "Duży efekt (d = 0,8)": 0.8,
 }
-
-
-def z_critical(alpha, two_sided):
-    if two_sided:
-        return norm.ppf(1 - alpha / 2)
-    return norm.ppf(1 - alpha)
-
-
-def t_critical(alpha, df, two_sided):
-    if two_sided:
-        return student_t.ppf(1 - alpha / 2, df)
-    return student_t.ppf(1 - alpha, df)
-
-
-@lru_cache(maxsize=None)
-def power_independent_t(d, alpha, n_per_group, two_sided):
-    if n_per_group < 2:
-        return 0.0
-    df = 2 * (n_per_group - 1)
-    nc = d * math.sqrt(n_per_group / 2)
-    tcrit = t_critical(alpha, df, two_sided)
-    if two_sided:
-        return float(
-            1 - nct.cdf(tcrit, df, nc) + nct.cdf(-tcrit, df, nc)
-        )
-    return float(1 - nct.cdf(tcrit, df, nc))
-
-
-@lru_cache(maxsize=None)
-def power_paired_t(d, alpha, n_pairs, two_sided):
-    if n_pairs < 2:
-        return 0.0
-    df = n_pairs - 1
-    nc = d * math.sqrt(n_pairs)
-    tcrit = t_critical(alpha, df, two_sided)
-    if two_sided:
-        return float(
-            1 - nct.cdf(tcrit, df, nc) + nct.cdf(-tcrit, df, nc)
-        )
-    return float(1 - nct.cdf(tcrit, df, nc))
-
-
-def n_independent_t_approx(d, alpha, power, two_sided):
-    z_alpha = z_critical(alpha, two_sided)
-    z_beta = norm.ppf(power)
-    return max(2, math.ceil(2 * ((z_alpha + z_beta) / d) ** 2))
-
-
-def n_paired_t_approx(d, alpha, power, two_sided):
-    z_alpha = z_critical(alpha, two_sided)
-    z_beta = norm.ppf(power)
-    return max(2, math.ceil(((z_alpha + z_beta) / d) ** 2))
-
-
-@lru_cache(maxsize=None)
-def n_independent_t_exact(d, alpha, power, two_sided):
-    start_n = max(2, n_independent_t_approx(d, alpha, power, two_sided) - 10)
-    for n_per_group in range(start_n, 100000):
-        if power_independent_t(d, alpha, n_per_group, two_sided) >= power:
-            return n_per_group
-    return None
-
-
-@lru_cache(maxsize=None)
-def n_paired_t_exact(d, alpha, power, two_sided):
-    start_n = max(2, n_paired_t_approx(d, alpha, power, two_sided) - 10)
-    for n_pairs in range(start_n, 100000):
-        if power_paired_t(d, alpha, n_pairs, two_sided) >= power:
-            return n_pairs
-    return None
-
-
-def n_mann_whitney(d, alpha, power, two_sided):
-    n_param = n_independent_t_exact(d, alpha, power, two_sided)
-    if n_param is None:
-        return None
-    return math.ceil(n_param / ARE_NORMAL)
-
-
-def n_wilcoxon(d, alpha, power, two_sided):
-    n_param = n_paired_t_exact(d, alpha, power, two_sided)
-    if n_param is None:
-        return None
-    return math.ceil(n_param / ARE_NORMAL)
-
-
-def effective_parametric_n_for_nonparametric(n_nonparam):
-    return max(2, int(math.floor(n_nonparam * ARE_NORMAL)))
 
 
 st.title("📊 Kalkulator wielkości próby")
